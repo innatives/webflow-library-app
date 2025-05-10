@@ -142,14 +142,14 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
         return;
       }
 
-      // Check if permission already exists for this library
+      // Check if permission already exists for this library and user combination
       const { data: existingPermission, error: checkError } = await supabase
         .from('shared_library_permissions')
         .select('id')
         .eq('shared_by', user.id)
         .eq('shared_with', userId)
         .eq('library_id', libraryId)
-        .maybeSingle();
+        .single();
 
       if (checkError && checkError.code !== 'PGRST116') {
         throw checkError;
@@ -160,11 +160,12 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
           title: "Already shared",
           description: `You've already shared "${libraryName}" with this user`,
         });
+        setEmail('');
         return;
       }
       
       // Create permission record
-      const { error } = await supabase
+      const { error: insertError } = await supabase
         .from('shared_library_permissions')
         .insert({
           shared_by: user.id,
@@ -174,7 +175,18 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
           library_id: libraryId
         });
       
-      if (error) throw error;
+      if (insertError) {
+        // If we still get a unique constraint violation, handle it gracefully
+        if (insertError.code === '23505') {
+          toast({
+            title: "Already shared",
+            description: `You've already shared "${libraryName}" with this user`,
+          });
+          setEmail('');
+          return;
+        }
+        throw insertError;
+      }
 
       toast({
         title: "Library shared",
