@@ -7,13 +7,14 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Auth from "./components/Auth";
 import { AuthProvider } from "./context/AuthContext";
-import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
-import { ClipboardList, Library, FolderOpen, Plus, LogIn } from "lucide-react";
+import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
+import { ClipboardList, Library, FolderOpen, Plus, LogIn, LogOut, User } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "./components/ui/button";
 import LibraryManager from "./components/LibraryManager";
+import { Separator } from "./components/ui/separator";
 
 const queryClient = new QueryClient();
 
@@ -28,7 +29,7 @@ interface Library {
 const SidebarContentComponent = () => {
   const [libraries, setLibraries] = useState<Library[]>([]);
   const [managingLibraries, setManagingLibraries] = useState(false);
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const selectedLibraryId = location.state?.selectedLibraryId;
@@ -64,6 +65,11 @@ const SidebarContentComponent = () => {
     navigate('/', { state: { selectedLibraryId: null } });
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 p-4">
@@ -78,56 +84,77 @@ const SidebarContentComponent = () => {
 
   return (
     <>
-      <SidebarMenu>
-        <SidebarMenuItem>
-          <SidebarMenuButton 
-            asChild 
-            isActive={!selectedLibraryId}
-            onClick={handleHomeClick}
-          >
-            <button className="w-full flex items-center gap-2 text-muted-foreground">
-              <ClipboardList className="h-4 w-4" />
-              <span>Clipboard Parser</span>
-            </button>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-
-        <SidebarMenuItem>
-          <SidebarMenuButton asChild>
-            <button className="w-full flex items-center gap-2 text-muted-foreground">
-              <Library className="h-4 w-4" />
-              <span>Libraries</span>
-            </button>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        
-        {libraries.map((library) => (
-          <SidebarMenuItem key={library.id}>
+      <div className="flex-1">
+        <SidebarMenu>
+          <SidebarMenuItem>
             <SidebarMenuButton 
               asChild 
-              isActive={selectedLibraryId === library.id}
-              onClick={() => handleLibraryClick(library.id)}
+              isActive={!selectedLibraryId}
+              onClick={handleHomeClick}
             >
-              <button className="w-full flex items-center gap-2 pl-6 text-muted-foreground">
-                <FolderOpen className="h-4 w-4" />
-                <span>{library.name}</span>
+              <button className="w-full flex items-center gap-2 text-muted-foreground">
+                <ClipboardList className="h-4 w-4" />
+                <span>Clipboard Parser</span>
               </button>
             </SidebarMenuButton>
           </SidebarMenuItem>
-        ))}
-        
-        <SidebarMenuItem>
-          <SidebarMenuButton asChild>
-            <button 
-              className="w-full flex items-center gap-2 pl-6 text-muted-foreground"
-              onClick={() => setManagingLibraries(true)}
-            >
-              <Plus className="h-4 w-4" />
-              <span>New Library</span>
-            </button>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      </SidebarMenu>
+
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <button className="w-full flex items-center gap-2 text-muted-foreground">
+                <Library className="h-4 w-4" />
+                <span>Libraries</span>
+              </button>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          
+          {libraries.map((library) => (
+            <SidebarMenuItem key={library.id}>
+              <SidebarMenuButton 
+                asChild 
+                isActive={selectedLibraryId === library.id}
+                onClick={() => handleLibraryClick(library.id)}
+              >
+                <button className="w-full flex items-center gap-2 pl-6 text-muted-foreground">
+                  <FolderOpen className="h-4 w-4" />
+                  <span>{library.name}</span>
+                </button>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+          
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <button 
+                className="w-full flex items-center gap-2 pl-6 text-muted-foreground"
+                onClick={() => setManagingLibraries(true)}
+              >
+                <Plus className="h-4 w-4" />
+                <span>New Library</span>
+              </button>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </div>
+
+      <SidebarFooter>
+        <Separator />
+        <div className="p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <User className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground truncate">{user.email}</span>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleSignOut}
+            className="w-full gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </Button>
+        </div>
+      </SidebarFooter>
 
       {managingLibraries && (
         <LibraryManager
