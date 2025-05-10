@@ -161,7 +161,7 @@ const SharedClipboardList: React.FC<SharedClipboardListProps> = ({ selectedLibra
         size="lg"
         onClick={() => setClipboardOpen(true)}
       >
-        <ClipboardCopy className="h-5 w-5 mr-2" />
+        <ClipboardCopy className="h-4 w-4 mr-2" />
              </Button>
 
       {/* Clipboard Parser Modal */}
