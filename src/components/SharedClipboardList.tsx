@@ -1,12 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, LogIn, Users, Share } from 'lucide-react';
+import { Loader2, LogIn, Share, ClipboardCopy } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import SharedClipboardItem from './SharedClipboardItem';
 import { Button } from './ui/button';
 import LibrarySharingManager from './LibrarySharingManager';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import ClipboardParser from './ClipboardParser';
 
 interface SharedClipboardListProps {
   selectedLibraryId?: string | null;
@@ -27,6 +34,7 @@ const SharedClipboardList: React.FC<SharedClipboardListProps> = ({ selectedLibra
   const [items, setItems] = useState<SharedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [sharingOpen, setSharingOpen] = useState(false);
+  const [clipboardOpen, setClipboardOpen] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -147,6 +155,29 @@ const SharedClipboardList: React.FC<SharedClipboardListProps> = ({ selectedLibra
         </div>
       )}
       
+      {/* Floating Button */}
+      <Button
+        className="fixed bottom-6 right-6 rounded-full shadow-lg"
+        size="lg"
+        onClick={() => setClipboardOpen(true)}
+      >
+        <ClipboardCopy className="h-5 w-5 mr-2" />
+        Add from Clipboard
+      </Button>
+
+      {/* Clipboard Parser Modal */}
+      <Dialog open={clipboardOpen} onOpenChange={setClipboardOpen}>
+        <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Clipboard Parser</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto">
+            <ClipboardParser />
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Sharing Manager Modal */}
       {sharingOpen && selectedLibraryId && (
         <LibrarySharingManager 
           onClose={() => setSharingOpen(false)} 
