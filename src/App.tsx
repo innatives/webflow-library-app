@@ -195,7 +195,7 @@ const App = () => (
         <BrowserRouter>
           <SidebarProvider>
             <Sidebar variant="inset">
-              <SidebarHeader className="flex items-center gap-2 px-4">
+              <SidebarHeader className="flex items-center gap-2 px-4 justify-start">
                 <Logo />
                 <span className="font-medium text-base">Webflow Elements</span>
               </SidebarHeader>
