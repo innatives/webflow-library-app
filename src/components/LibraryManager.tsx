@@ -103,19 +103,35 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
         // Fetch emails for each user
         const userEmails = await Promise.all(
           permissions.map(async (perm) => {
-            const { data: userData, error: userError } = await supabase
-              .from('users')
-              .select('email')
-              .eq('id', perm.shared_with)
-              .single();
+            try {
+              const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('email')
+                .eq('id', perm.shared_with)
+                .maybeSingle();
 
-            if (userError) throw userError;
+              if (userError) {
+                console.error('Error fetching user data:', userError);
+                return {
+                  email: 'Unknown User',
+                  can_edit: perm.can_edit,
+                  can_delete: perm.can_delete
+                };
+              }
 
-            return {
-              email: userData?.email || 'Unknown',
-              can_edit: perm.can_edit,
-              can_delete: perm.can_delete
-            };
+              return {
+                email: userData?.email || 'Unknown User',
+                can_edit: perm.can_edit,
+                can_delete: perm.can_delete
+              };
+            } catch (error) {
+              console.error('Error in user fetch:', error);
+              return {
+                email: 'Unknown User',
+                can_edit: perm.can_edit,
+                can_delete: perm.can_delete
+              };
+            }
           })
         );
 
@@ -123,6 +139,11 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
       }
     } catch (error) {
       console.error('Error fetching shared users:', error);
+      toast({
+        title: "Error fetching shared users",
+        description: "Failed to load shared user information",
+        variant: "destructive"
+      });
     }
   };
 
