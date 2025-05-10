@@ -8,7 +8,7 @@ const Index = () => {
   const selectedLibraryId = location.state?.selectedLibraryId;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="px-4 py-8">
       {selectedLibraryId ? (
         <SharedClipboardList selectedLibraryId={selectedLibraryId} />
       ) : (
