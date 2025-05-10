@@ -17,7 +17,7 @@ import LibraryManager from "./components/LibraryManager";
 
 const queryClient = new QueryClient();
 
-const SidebarContent = () => {
+const SidebarContentComponent = () => {
   const [libraries, setLibraries] = useState([]);
   const [managingLibraries, setManagingLibraries] = useState(false);
   const { user } = useAuth();
@@ -123,7 +123,7 @@ const App = () => (
                 <span className="font-medium text-base">Webflow Elements</span>
               </SidebarHeader>
               <SidebarContent>
-                <SidebarContent />
+                <SidebarContentComponent />
               </SidebarContent>
             </Sidebar>
             <SidebarInset>
