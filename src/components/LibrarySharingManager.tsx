@@ -102,7 +102,7 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
           shared_with,
           can_edit,
           can_delete,
-          auth:users(email)
+          auth:auth.users(email)
         `)
         .eq('shared_by', user?.id)
         .eq('library_id', libraryId);
@@ -197,7 +197,7 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
         })
         .select(`
           *,
-          auth:users(email)
+          auth:auth.users(email)
         `)
         .single();
       
