@@ -119,11 +119,11 @@ const ClipboardParser: React.FC = () => {
       <CardContent className="p-4">
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-2">
-            <ClipboardList className="h-4 w-4 text-primary" />
+            <ClipboardList className="h-4 w-4 text-muted-foreground" />
             <h2 className="text-lg font-medium">Clipboard Parser</h2>
           </div>
           {clipboardHistory.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={clearHistory} className="gap-1 h-8">
+            <Button variant="ghost" size="sm" onClick={clearHistory} className="gap-1 h-8 text-muted-foreground hover:text-foreground">
               <Trash2 size={14} />
               Clear
             </Button>
