@@ -68,7 +68,7 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
     try {
       setLoadingPermissions(true);
       
-      // Updated query to correctly join with auth.users table
+      // Updated query to use the correct table alias for auth.users
       const { data: permissions, error } = await supabase
         .from('shared_library_permissions')
         .select(`
@@ -76,7 +76,7 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
           shared_with,
           can_edit,
           can_delete,
-          auth:shared_with(email)
+          auth_users:shared_with(email)
         `)
         .eq('shared_by', user?.id)
         .eq('library_id', libraryId);
@@ -86,7 +86,7 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
       if (permissions) {
         const formattedUsers = permissions.map(perm => ({
           id: perm.id,
-          email: perm.auth?.email || 'Unknown User',
+          email: perm.auth_users?.email || 'Unknown User',
           can_edit: perm.can_edit,
           can_delete: perm.can_delete
         }));
