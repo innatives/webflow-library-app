@@ -70,11 +70,11 @@ const SharedClipboardList: React.FC<SharedClipboardListProps> = ({ selectedLibra
         return;
       }
 
-      // Fetch items from the library
+      // Fetch items from the library using table alias to avoid ambiguity
       const { data: items, error: itemsError } = await supabase
         .from('shared_clipboard_items')
         .select('*')
-        .eq('library_id', libraryId)
+        .eq('shared_clipboard_items.library_id', libraryId)
         .order('created_at', { ascending: false });
         
       if (itemsError) throw itemsError;
