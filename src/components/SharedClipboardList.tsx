@@ -51,6 +51,26 @@ const SharedClipboardList: React.FC<SharedClipboardListProps> = ({ selectedLibra
   const fetchSharedItems = async (libraryId: string) => {
     setLoading(true);
     try {
+      // First check if the user has access to this library
+      const { data: hasAccess, error: accessError } = await supabase
+        .rpc('has_library_access', {
+          library_id: libraryId,
+          current_user_id: user?.id
+        });
+
+      if (accessError) throw accessError;
+
+      if (!hasAccess) {
+        toast({
+          title: 'Access denied',
+          description: 'You do not have access to this library',
+          variant: 'destructive'
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Fetch items from the library
       const { data: items, error: itemsError } = await supabase
         .from('shared_clipboard_items')
         .select('*')
