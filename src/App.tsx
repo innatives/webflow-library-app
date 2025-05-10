@@ -107,7 +107,7 @@ const SidebarContentComponent = () => {
               onClick={handleHomeClick}
             >
               <button className="w-full flex items-center gap-2 text-muted-foreground">
-                <Logo />
+                <Clipboard-list className="h-4 w-4" />
                 <span>Clipboard Parser</span>
               </button>
             </SidebarMenuButton>
