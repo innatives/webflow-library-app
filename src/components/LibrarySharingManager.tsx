@@ -75,7 +75,7 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
           shared_with,
           can_edit,
           can_delete,
-          users!shared_library_permissions_shared_with_fkey(email)
+          auth.users!shared_library_permissions_shared_with_fkey(email)
         `)
         .eq('shared_by', user?.id)
         .eq('library_id', libraryId);
@@ -85,7 +85,7 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
       if (permissions) {
         const formattedUsers = permissions.map(perm => ({
           id: perm.id,
-          email: perm.users?.email || 'Unknown User',
+          email: perm.auth_users?.email || 'Unknown User',
           can_edit: perm.can_edit,
           can_delete: perm.can_delete
         }));
