@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Auth from "./components/Auth";
@@ -14,7 +14,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "./components/ui/button";
 import LibraryManager from "./components/LibraryManager";
-import SharedClipboardList from "./components/SharedClipboardList";
 
 const queryClient = new QueryClient();
 
@@ -29,9 +28,10 @@ interface Library {
 const SidebarContentComponent = () => {
   const [libraries, setLibraries] = useState<Library[]>([]);
   const [managingLibraries, setManagingLibraries] = useState(false);
-  const [selectedLibrary, setSelectedLibrary] = useState<string | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const selectedLibraryId = location.state?.selectedLibraryId;
 
   useEffect(() => {
     if (user) {
@@ -51,14 +51,17 @@ const SidebarContentComponent = () => {
 
       if (error) throw error;
       setLibraries(data || []);
-      
-      // Select first library by default if none is selected
-      if (data && data.length > 0 && !selectedLibrary) {
-        setSelectedLibrary(data[0].id);
-      }
     } catch (error) {
       console.error('Error fetching libraries:', error);
     }
+  };
+
+  const handleLibraryClick = (libraryId: string) => {
+    navigate('/', { state: { selectedLibraryId: libraryId } });
+  };
+
+  const handleHomeClick = () => {
+    navigate('/', { state: { selectedLibraryId: null } });
   };
 
   if (!user) {
@@ -77,6 +80,19 @@ const SidebarContentComponent = () => {
     <>
       <SidebarMenu>
         <SidebarMenuItem>
+          <SidebarMenuButton 
+            asChild 
+            isActive={!selectedLibraryId}
+            onClick={handleHomeClick}
+          >
+            <button className="w-full flex items-center gap-2 text-muted-foreground">
+              <ClipboardList className="h-4 w-4" />
+              <span>Clipboard Parser</span>
+            </button>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+
+        <SidebarMenuItem>
           <SidebarMenuButton asChild>
             <button className="w-full flex items-center gap-2 text-muted-foreground">
               <Library className="h-4 w-4" />
@@ -89,8 +105,8 @@ const SidebarContentComponent = () => {
           <SidebarMenuItem key={library.id}>
             <SidebarMenuButton 
               asChild 
-              isActive={selectedLibrary === library.id}
-              onClick={() => setSelectedLibrary(library.id)}
+              isActive={selectedLibraryId === library.id}
+              onClick={() => handleLibraryClick(library.id)}
             >
               <button className="w-full flex items-center gap-2 pl-6 text-muted-foreground">
                 <FolderOpen className="h-4 w-4" />
@@ -119,16 +135,12 @@ const SidebarContentComponent = () => {
           onClose={() => setManagingLibraries(false)}
           onSelect={(library) => {
             setManagingLibraries(false);
-            setSelectedLibrary(library.id);
+            handleLibraryClick(library.id);
             fetchLibraries();
           }}
-          selectedLibraryId={selectedLibrary}
+          selectedLibraryId={selectedLibraryId}
         />
       )}
-
-      <div className="flex-1 p-4">
-        {selectedLibrary && <SharedClipboardList selectedLibraryId={selectedLibrary} />}
-      </div>
     </>
   );
 };
