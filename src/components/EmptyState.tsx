@@ -26,7 +26,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
     <Card className="w-full border-0 bg-secondary/50">
       <CardContent className="p-6">
         <div className="flex flex-col items-center justify-center text-center gap-6">
-          <ClipboardPaste size={32} className="text-muted-foreground" />
+         
           
           <div>
             <h2 className="font-medium mb-4 text-xl">To get started, either:</h2>
