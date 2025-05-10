@@ -41,7 +41,7 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
   const { user } = useAuth();
 
   useEffect(() => {
-    if (user) {
+    if (user && libraryId) {
       fetchLibraryName();
       fetchSharedUsers();
     }
@@ -53,14 +53,40 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
         .from('user_libraries')
         .select('name')
         .eq('id', libraryId)
+        .eq('created_by', user?.id)
         .single();
       
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST116') {
+          toast({
+            title: "Library not found",
+            description: "The specified library could not be found or you don't have access to it",
+            variant: "destructive"
+          });
+          onClose();
+          return;
+        }
+        throw error;
+      }
+      
       if (data) {
         setLibraryName(data.name);
+      } else {
+        toast({
+          title: "Library not found",
+          description: "The specified library could not be found or you don't have access to it",
+          variant: "destructive"
+        });
+        onClose();
       }
-    } catch (error) {
-      console.error('Error fetching library name:', error);
+    } catch (error: any) {
+      console.error('Error fetching library name:', error.message);
+      toast({
+        title: "Error fetching library",
+        description: "Failed to load library information. Please try again.",
+        variant: "destructive"
+      });
+      onClose();
     }
   };
 
@@ -101,8 +127,8 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
       } else {
         setSharedUsers([]);
       }
-    } catch (error) {
-      console.error('Error fetching shared users:', error);
+    } catch (error: any) {
+      console.error('Error fetching shared users:', error.message);
       toast({
         title: "Error fetching shared users",
         description: "Failed to load shared user information",
