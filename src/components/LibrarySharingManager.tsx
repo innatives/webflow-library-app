@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Share, Users, Loader2, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2, Library, AlertCircle, Mail } from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
@@ -50,13 +50,23 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({ onClose, 
     try {
       const { data, error } = await supabase
         .from('user_libraries')
-        .select('name')
+        .select('name, is_shared')
         .eq('id', libraryId)
         .single();
       
       if (error) throw error;
       if (data) {
         setLibraryName(data.name);
+        
+        // If library is not shared, update it
+        if (!data.is_shared) {
+          const { error: updateError } = await supabase
+            .from('user_libraries')
+            .update({ is_shared: true })
+            .eq('id', libraryId);
+            
+          if (updateError) throw updateError;
+        }
       }
     } catch (error) {
       console.error('Error fetching library name:', error);
@@ -69,20 +79,31 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({ onClose, 
     try {
       setLoadingPermissions(true);
       
-      const { data, error } = await supabase
+      const { data: permissions, error } = await supabase
         .from('shared_library_permissions')
         .select(`
           id,
           shared_with,
           can_edit,
-          can_delete
+          can_delete,
+          users!shared_library_permissions_shared_with_fkey (
+            email
+          )
         `)
         .eq('shared_by', user.id)
         .eq('library_id', libraryId);
       
       if (error) throw error;
       
-      setSharedPermissions(data || []);
+      if (permissions) {
+        setSharedPermissions(permissions.map(perm => ({
+          id: perm.id,
+          shared_with: perm.shared_with,
+          can_edit: perm.can_edit,
+          can_delete: perm.can_delete,
+          email: perm.users?.email
+        })));
+      }
     } catch (error: any) {
       toast({
         title: "Error fetching sharing permissions",
@@ -283,7 +304,7 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({ onClose, 
                       <div className="flex flex-col gap-3">
                         <div className="flex justify-between items-center">
                           <span className="font-mono text-sm truncate">
-                            {permission.shared_with}
+                            {permission.email}
                           </span>
                           <Button
                             size="sm"
