@@ -208,6 +208,15 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
         throw insertError;
       }
 
+      // Update library is_shared status
+      const { error: updateError } = await supabase
+        .from('user_libraries')
+        .update({ is_shared: true })
+        .eq('id', libraryId)
+        .eq('created_by', user.id);
+
+      if (updateError) throw updateError;
+
       toast({
         title: "Library shared",
         description: `"${libraryName}" has been shared with ${email}`,
@@ -274,6 +283,17 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
       if (error) throw error;
       
       setSharedUsers(prev => prev.filter(u => u.id !== userId));
+
+      // If this was the last shared user, update library is_shared status
+      if (sharedUsers.length <= 1) {
+        const { error: updateError } = await supabase
+          .from('user_libraries')
+          .update({ is_shared: false })
+          .eq('id', libraryId)
+          .eq('created_by', user?.id);
+
+        if (updateError) throw updateError;
+      }
       
       toast({
         title: "Sharing removed",
