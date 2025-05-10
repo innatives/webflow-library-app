@@ -95,7 +95,7 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
     try {
       setLoadingPermissions(true);
       
-      // First, get the permissions
+      // First, get the permissions and join with users table
       const { data: permissions, error: permissionsError } = await supabase
         .from('shared_library_permissions')
         .select(`
@@ -103,7 +103,7 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
           shared_with,
           can_edit,
           can_delete,
-          users!shared_library_permissions_shared_with_fkey (
+          users (
             email
           )
         `)
@@ -198,7 +198,12 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
           can_delete: false,
           library_id: libraryId
         })
-        .select('*, users!shared_library_permissions_shared_with_fkey (email)')
+        .select(`
+          *,
+          users (
+            email
+          )
+        `)
         .single();
       
       if (insertError) throw insertError;
