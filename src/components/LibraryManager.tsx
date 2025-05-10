@@ -1,13 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Edit, Trash2, Loader2, Library, AlertCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
-import {
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Plus, Edit, Trash2, Loader2, Library, AlertCircle, Mail } from 'lucide-react';
+import { 
   Dialog,
   DialogContent,
   DialogDescription,
@@ -25,14 +24,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 interface UserLibrary {
   id: string;
   name: string;
   is_shared: boolean;
   created_at: string;
+}
+
+interface SharedUser {
+  email: string;
+  can_edit: boolean;
+  can_delete: boolean;
 }
 
 interface LibraryManagerProps {
@@ -59,6 +64,7 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
   const [deletingLibrary, setDeletingLibrary] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [libraryItems, setLibraryItems] = useState<number>(0);
+  const [sharedUsers, setSharedUsers] = useState<SharedUser[]>([]);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -74,6 +80,52 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
     }
   }, [libraryToDelete]);
 
+  useEffect(() => {
+    if (editLibrary?.is_shared) {
+      fetchSharedUsers(editLibrary.id);
+    }
+  }, [editLibrary]);
+
+  const fetchSharedUsers = async (libraryId: string) => {
+    try {
+      const { data: permissions, error } = await supabase
+        .from('shared_library_permissions')
+        .select(`
+          shared_with,
+          can_edit,
+          can_delete
+        `)
+        .eq('library_id', libraryId);
+
+      if (error) throw error;
+
+      if (permissions) {
+        // Fetch emails for each user
+        const userEmails = await Promise.all(
+          permissions.map(async (perm) => {
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('email')
+              .eq('id', perm.shared_with)
+              .single();
+
+            if (userError) throw userError;
+
+            return {
+              email: userData?.email || 'Unknown',
+              can_edit: perm.can_edit,
+              can_delete: perm.can_delete
+            };
+          })
+        );
+
+        setSharedUsers(userEmails);
+      }
+    } catch (error) {
+      console.error('Error fetching shared users:', error);
+    }
+  };
+
   const fetchLibraries = async () => {
     try {
       setLoading(true);
@@ -84,7 +136,7 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
         .select('*')
         .eq('created_by', user.id)
         .order('created_at', { ascending: true });
-
+      
       if (error) throw error;
       
       setLibraries(data || []);
@@ -196,7 +248,6 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
       return;
     }
 
-    // Prevent deletion if it's the only library
     if (libraries.length <= 1) {
       toast({
         title: "Cannot delete library",
@@ -210,7 +261,6 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
     try {
       setDeletingLibrary(true);
 
-      // First, update all clipboard items to set their library_id to null
       const { error: updateError } = await supabase
         .from('shared_clipboard_items')
         .update({ library_id: null })
@@ -218,7 +268,6 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
 
       if (updateError) throw updateError;
       
-      // Then delete the library
       const { error: deleteError } = await supabase
         .from('user_libraries')
         .delete()
@@ -228,7 +277,6 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
 
       setLibraries(libraries.filter(lib => lib.id !== libraryToDelete));
 
-      // If the deleted library was selected, select another one
       if (selectedLibraryId === libraryToDelete && libraries.length > 0) {
         const remainingLib = libraries.find(lib => lib.id !== libraryToDelete);
         if (remainingLib) {
@@ -306,6 +354,28 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
                                 />
                                 <Label htmlFor={`share-lib-${library.id}`}>Shared library</Label>
                               </div>
+
+                              {editLibrary.is_shared && sharedUsers.length > 0 && (
+                                <div className="mt-4 space-y-2">
+                                  <h4 className="text-sm font-medium flex items-center gap-2">
+                                    <Mail size={14} />
+                                    Shared with:
+                                  </h4>
+                                  <div className="space-y-2">
+                                    {sharedUsers.map((sharedUser, index) => (
+                                      <div key={index} className="text-sm text-muted-foreground flex items-center gap-2">
+                                        <span>{sharedUser.email}</span>
+                                        <span className="text-xs">
+                                          ({[
+                                            sharedUser.can_edit && 'can edit',
+                                            sharedUser.can_delete && 'can delete'
+                                          ].filter(Boolean).join(', ') || 'view only'})
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                               
                               <div className="flex space-x-2 mt-2">
                                 <Button size="sm" onClick={handleUpdateLibrary}>Save</Button>
