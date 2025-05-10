@@ -60,6 +60,7 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [libraryItems, setLibraryItems] = useState<number>(0);
   const [sharingManagerOpen, setSharingManagerOpen] = useState(false);
+  const [libraryToShare, setLibraryToShare] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -136,16 +137,19 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
 
       setLibraries([...libraries, data]);
       setNewLibraryName('');
-      setIsShared(false);
 
       toast({
         title: "Library created",
         description: `"${data.name}" library has been created.`
       });
 
+      // If the library is shared, open the sharing manager
       if (isShared) {
+        setLibraryToShare(data.id);
         setSharingManagerOpen(true);
       }
+
+      setIsShared(false);
     } catch (error: any) {
       toast({
         title: "Error creating library",
@@ -177,6 +181,7 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
       
       // If the library is now shared, open the sharing manager
       if (data.is_shared && !editLibrary.is_shared) {
+        setLibraryToShare(data.id);
         setSharingManagerOpen(true);
       }
       
@@ -449,10 +454,13 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {sharingManagerOpen && editLibrary && (
+      {sharingManagerOpen && libraryToShare && (
         <LibrarySharingManager
-          onClose={() => setSharingManagerOpen(false)}
-          libraryId={editLibrary.id}
+          onClose={() => {
+            setSharingManagerOpen(false);
+            setLibraryToShare(null);
+          }}
+          libraryId={libraryToShare}
         />
       )}
     </>
