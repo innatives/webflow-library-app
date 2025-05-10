@@ -68,28 +68,38 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
     try {
       setLoadingPermissions(true);
       
-      const { data: permissions, error } = await supabase
+      // First, get the permissions
+      const { data: permissions, error: permissionsError } = await supabase
         .from('shared_library_permissions')
-        .select(`
-          id,
-          shared_with,
-          can_edit,
-          can_delete,
-          users!shared_library_permissions_shared_with_fkey(email)
-        `)
+        .select('id, shared_with, can_edit, can_delete')
         .eq('shared_by', user?.id)
         .eq('library_id', libraryId);
 
-      if (error) throw error;
+      if (permissionsError) throw permissionsError;
 
-      if (permissions) {
-        const formattedUsers = permissions.map(perm => ({
-          id: perm.id,
-          email: perm.users?.email || 'Unknown User',
-          can_edit: perm.can_edit,
-          can_delete: perm.can_delete
-        }));
+      if (permissions && permissions.length > 0) {
+        // Then, get the email addresses for these users
+        const { data: users, error: usersError } = await supabase
+          .from('users')
+          .select('id, email')
+          .in('id', permissions.map(p => p.shared_with));
+
+        if (usersError) throw usersError;
+
+        // Combine the permissions with user emails
+        const formattedUsers = permissions.map(perm => {
+          const userInfo = users?.find(u => u.id === perm.shared_with);
+          return {
+            id: perm.id,
+            email: userInfo?.email || 'Unknown User',
+            can_edit: perm.can_edit,
+            can_delete: perm.can_delete
+          };
+        });
+        
         setSharedUsers(formattedUsers);
+      } else {
+        setSharedUsers([]);
       }
     } catch (error) {
       console.error('Error fetching shared users:', error);
