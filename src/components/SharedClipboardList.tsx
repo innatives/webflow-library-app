@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, LogIn } from 'lucide-react';
+import { Loader2, LogIn, Users, Share } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import SharedClipboardItem from './SharedClipboardItem';
 import { Button } from './ui/button';
+import LibrarySharingManager from './LibrarySharingManager';
 
 interface SharedClipboardListProps {
   selectedLibraryId?: string | null;
@@ -25,6 +26,7 @@ interface SharedItem {
 const SharedClipboardList: React.FC<SharedClipboardListProps> = ({ selectedLibraryId }) => {
   const [items, setItems] = useState<SharedItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sharingOpen, setSharingOpen] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -120,23 +122,38 @@ const SharedClipboardList: React.FC<SharedClipboardListProps> = ({ selectedLibra
     );
   }
 
-  if (items.length === 0) {
-    return (
-      <div className="text-center py-12 border rounded-md">
-        <p className="text-muted-foreground">No items in this library yet</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Use the clipboard parser to add items to this library
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {items.map(item => (
-        <SharedClipboardItem key={item.id} item={item} onDelete={handleDelete} />
-      ))}
-    </div>
+    <>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-medium">Clipboard Library</h2>
+        <Button variant="outline" size="sm" onClick={() => setSharingOpen(true)} className="gap-2">
+          <Share size={14} />
+          Share Library
+        </Button>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="text-center py-12 border rounded-md">
+          <p className="text-muted-foreground">No items in this library yet</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Use the clipboard parser to add items to this library
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {items.map(item => (
+            <SharedClipboardItem key={item.id} item={item} onDelete={handleDelete} />
+          ))}
+        </div>
+      )}
+      
+      {sharingOpen && selectedLibraryId && (
+        <LibrarySharingManager 
+          onClose={() => setSharingOpen(false)} 
+          libraryId={selectedLibraryId}
+        />
+      )}
+    </>
   );
 };
 

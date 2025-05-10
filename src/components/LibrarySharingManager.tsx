@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -70,7 +69,6 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({ onClose, 
     try {
       setLoadingPermissions(true);
       
-      // Fetch all permissions for the specific library
       const { data, error } = await supabase
         .from('shared_library_permissions')
         .select(`
@@ -84,7 +82,6 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({ onClose, 
       
       if (error) throw error;
       
-      // For simplicity, we're just using the UUID - in a production app, you would want to fetch user profiles/emails
       setSharedPermissions(data || []);
     } catch (error: any) {
       toast({
