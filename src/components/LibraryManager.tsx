@@ -5,15 +5,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Plus, Edit, Trash2, Loader2, Library, AlertCircle, Mail } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2, Library, AlertCircle } from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+  DialogHeader,
+  DialogFooter
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,21 +22,17 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import LibrarySharingManager from './LibrarySharingManager';
 
 interface UserLibrary {
   id: string;
   name: string;
-  is_shared: boolean;
   created_at: string;
-}
-
-interface SharedUser {
-  email: string;
-  can_edit: boolean;
-  can_delete: boolean;
+  created_by: string;
+  is_shared: boolean;
 }
 
 interface LibraryManagerProps {
@@ -64,7 +59,7 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
   const [deletingLibrary, setDeletingLibrary] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [libraryItems, setLibraryItems] = useState<number>(0);
-  const [sharedUsers, setSharedUsers] = useState<SharedUser[]>([]);
+  const [sharingManagerOpen, setSharingManagerOpen] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -80,73 +75,6 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
     }
   }, [libraryToDelete]);
 
-  useEffect(() => {
-    if (editLibrary?.is_shared) {
-      fetchSharedUsers(editLibrary.id);
-    }
-  }, [editLibrary]);
-
-  const fetchSharedUsers = async (libraryId: string) => {
-    try {
-      const { data: permissions, error } = await supabase
-        .from('shared_library_permissions')
-        .select(`
-          shared_with,
-          can_edit,
-          can_delete
-        `)
-        .eq('library_id', libraryId);
-
-      if (error) throw error;
-
-      if (permissions) {
-        // Fetch emails for each user
-        const userEmails = await Promise.all(
-          permissions.map(async (perm) => {
-            try {
-              const { data: userData, error: userError } = await supabase
-                .from('users')
-                .select('email')
-                .eq('id', perm.shared_with)
-                .maybeSingle();
-
-              if (userError) {
-                console.error('Error fetching user data:', userError);
-                return {
-                  email: 'Unknown User',
-                  can_edit: perm.can_edit,
-                  can_delete: perm.can_delete
-                };
-              }
-
-              return {
-                email: userData?.email || 'Unknown User',
-                can_edit: perm.can_edit,
-                can_delete: perm.can_delete
-              };
-            } catch (error) {
-              console.error('Error in user fetch:', error);
-              return {
-                email: 'Unknown User',
-                can_edit: perm.can_edit,
-                can_delete: perm.can_delete
-              };
-            }
-          })
-        );
-
-        setSharedUsers(userEmails);
-      }
-    } catch (error) {
-      console.error('Error fetching shared users:', error);
-      toast({
-        title: "Error fetching shared users",
-        description: "Failed to load shared user information",
-        variant: "destructive"
-      });
-    }
-  };
-
   const fetchLibraries = async () => {
     try {
       setLoading(true);
@@ -157,7 +85,7 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
         .select('*')
         .eq('created_by', user.id)
         .order('created_at', { ascending: true });
-      
+
       if (error) throw error;
       
       setLibraries(data || []);
@@ -214,6 +142,10 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
         title: "Library created",
         description: `"${data.name}" library has been created.`
       });
+
+      if (isShared) {
+        setSharingManagerOpen(true);
+      }
     } catch (error: any) {
       toast({
         title: "Error creating library",
@@ -242,6 +174,12 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
       if (error) throw error;
 
       setLibraries(libraries.map(lib => lib.id === data.id ? data : lib));
+      
+      // If the library is now shared, open the sharing manager
+      if (data.is_shared && !editLibrary.is_shared) {
+        setSharingManagerOpen(true);
+      }
+      
       setEditLibrary(null);
 
       toast({
@@ -339,9 +277,6 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
             <DialogTitle className="flex items-center gap-2">
               <Library size={18} /> Manage Your Libraries
             </DialogTitle>
-            <DialogDescription>
-              Create and manage your clipboard libraries. Select a library to save items to it.
-            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 my-4">
@@ -375,28 +310,6 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
                                 />
                                 <Label htmlFor={`share-lib-${library.id}`}>Shared library</Label>
                               </div>
-
-                              {editLibrary.is_shared && sharedUsers.length > 0 && (
-                                <div className="mt-4 space-y-2">
-                                  <h4 className="text-sm font-medium flex items-center gap-2">
-                                    <Mail size={14} />
-                                    Shared with:
-                                  </h4>
-                                  <div className="space-y-2">
-                                    {sharedUsers.map((sharedUser, index) => (
-                                      <div key={index} className="text-sm text-muted-foreground flex items-center gap-2">
-                                        <span>{sharedUser.email}</span>
-                                        <span className="text-xs">
-                                          ({[
-                                            sharedUser.can_edit && 'can edit',
-                                            sharedUser.can_delete && 'can delete'
-                                          ].filter(Boolean).join(', ') || 'view only'})
-                                        </span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
                               
                               <div className="flex space-x-2 mt-2">
                                 <Button size="sm" onClick={handleUpdateLibrary}>Save</Button>
@@ -535,6 +448,13 @@ const LibraryManager: React.FC<LibraryManagerProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {sharingManagerOpen && editLibrary && (
+        <LibrarySharingManager
+          onClose={() => setSharingManagerOpen(false)}
+          libraryId={editLibrary.id}
+        />
+      )}
     </>
   );
 };
