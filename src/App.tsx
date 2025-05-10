@@ -20,10 +20,10 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <SidebarProvider>
-            <Sidebar>
+            <Sidebar variant="inset">
               <SidebarHeader className="flex items-center gap-2 px-4">
-                <ClipboardList className="h-6 w-6 text-primary" />
-                <span className="font-bold text-lg">Webflow Elements</span>
+                <ClipboardList className="h-4 w-4 text-primary" />
+                <span className="font-medium text-base">Webflow Elements</span>
               </SidebarHeader>
               <SidebarContent>
                 {/* Sidebar content can be added here */}

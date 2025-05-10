@@ -115,17 +115,17 @@ const ClipboardParser: React.FC = () => {
   }, [handlePaste, handleDrop, handleDragOver]);
 
   return (
-    <Card className="w-full">
+    <Card className="w-full border-0">
       <CardContent className="p-4">
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">Clipboard Parser</h2>
+            <ClipboardList className="h-4 w-4 text-primary" />
+            <h2 className="text-lg font-medium">Clipboard Parser</h2>
           </div>
           {clipboardHistory.length > 0 && (
-            <Button variant="outline" onClick={clearHistory} className="gap-1">
+            <Button variant="ghost" size="sm" onClick={clearHistory} className="gap-1 h-8">
               <Trash2 size={14} />
-              Clear All
+              Clear
             </Button>
           )}
         </div>
@@ -133,7 +133,7 @@ const ClipboardParser: React.FC = () => {
         {clipboardHistory.length === 0 ? (
           <EmptyState onPaste={handleAsyncPaste} hasAsyncClipboard={hasAsyncClipboard} />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-2">
             {clipboardHistory.map((item, index) => (
               <ClipboardItem key={item.timestamp} data={item.data} index={index} />
             ))}
