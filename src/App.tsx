@@ -8,7 +8,7 @@ import NotFound from "./pages/NotFound";
 import Auth from "./components/Auth";
 import { AuthProvider } from "./context/AuthContext";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
-import { Library, FolderOpen, Plus, LogIn, LogOut, User } from "lucide-react";
+import { Library, FolderOpen, Plus, LogIn, LogOut, User, Clipboard } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
