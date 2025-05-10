@@ -2,22 +2,19 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { extractData, formatContent } from '@/utils/clipboardUtils';
 import ClipboardItem from './ClipboardItem';
 import EmptyState from './EmptyState';
-import SharedClipboardList from './SharedClipboardList';
 import { Button } from '@/components/ui/button';
-import { Trash2, ClipboardList, Database } from 'lucide-react';
+import { Trash2, ClipboardList } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
+
 const ClipboardParser: React.FC = () => {
   const [clipboardHistory, setClipboardHistory] = useState<any[]>([]);
   const [label, setLabel] = useState<string>('');
-  const {
-    toast
-  } = useToast();
-  const [activeTab, setActiveTab] = useState<string>('clipboard');
+  const { toast } = useToast();
   const hasAsyncClipboard = !navigator.clipboard || !navigator.clipboard.read;
+
   const addToHistory = useCallback((data: any, source: string) => {
     if (data) {
-      // Add timestamp to identify each entry uniquely
       const entry = {
         data,
         source,
@@ -31,6 +28,7 @@ const ClipboardParser: React.FC = () => {
       });
     }
   }, [toast]);
+
   const handleAsyncPaste = useCallback(async () => {
     try {
       const clipboardItems = await navigator.clipboard.read();
@@ -56,6 +54,7 @@ const ClipboardParser: React.FC = () => {
       });
     }
   }, [toast, addToHistory]);
+
   const handlePaste = useCallback(async (e: ClipboardEvent) => {
     if (!e.clipboardData) return;
     try {
@@ -72,6 +71,7 @@ const ClipboardParser: React.FC = () => {
       });
     }
   }, [toast, addToHistory]);
+
   const handleDrop = useCallback(async (e: DragEvent) => {
     e.preventDefault();
     if (!e.dataTransfer) return;
@@ -89,9 +89,11 @@ const ClipboardParser: React.FC = () => {
       });
     }
   }, [toast, addToHistory]);
+
   const handleDragOver = useCallback((e: DragEvent) => {
     e.preventDefault();
   }, []);
+
   const clearHistory = useCallback(() => {
     setClipboardHistory([]);
     setLabel('');
@@ -100,6 +102,7 @@ const ClipboardParser: React.FC = () => {
       description: "Clipboard history has been cleared"
     });
   }, [toast]);
+
   useEffect(() => {
     document.addEventListener('paste', handlePaste as EventListener);
     document.addEventListener('drop', handleDrop as EventListener);
@@ -110,48 +113,35 @@ const ClipboardParser: React.FC = () => {
       document.removeEventListener('dragover', handleDragOver as EventListener);
     };
   }, [handlePaste, handleDrop, handleDragOver]);
-  return <div className="container py-6">
-      <header className="mb-8">
-        <div className="flex justify-between items-center">
+
+  return (
+    <Card className="w-full">
+      <CardContent className="p-4">
+        <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-2">
-            <ClipboardList size={28} className="text-primary" />
-            <h1 className="text-2xl font-bold">Clipboard Code Parser</h1>
+            <ClipboardList className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">Clipboard Parser</h2>
           </div>
-          
-          {clipboardHistory.length > 0 && activeTab === 'clipboard' && <Button variant="outline" onClick={clearHistory} className="gap-1">
+          {clipboardHistory.length > 0 && (
+            <Button variant="outline" onClick={clearHistory} className="gap-1">
               <Trash2 size={14} />
               Clear All
-            </Button>}
+            </Button>
+          )}
         </div>
-        
-        {label && clipboardHistory.length > 0 && activeTab === 'clipboard' && <p className="text-sm text-muted-foreground mt-1">
-            Latest source: <code className="bg-muted px-1 py-0.5 rounded">{label}</code>
-            <span className="ml-2">{clipboardHistory.length} {clipboardHistory.length === 1 ? 'item' : 'items'} in history</span>
-          </p>}
-      </header>
-      
-      <Tabs defaultValue="clipboard" onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="bg-neutral-100">
-          <TabsTrigger value="clipboard" className="gap-2">
-            <ClipboardList size={14} />
-            <span>Clipboard</span>
-          </TabsTrigger>
-          <TabsTrigger value="shared" className="gap-2">
-            <Database size={14} />
-            <span>Shared Library</span>
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="clipboard" className="mt-0">
-          {clipboardHistory.length === 0 ? <EmptyState onPaste={handleAsyncPaste} hasAsyncClipboard={hasAsyncClipboard} /> : <div className="grid gap-6">
-              {clipboardHistory.map((item, index) => <ClipboardItem key={item.timestamp} data={item.data} index={index} />)}
-            </div>}
-        </TabsContent>
-        
-        <TabsContent value="shared" className="mt-0">
-          <SharedClipboardList />
-        </TabsContent>
-      </Tabs>
-    </div>;
+
+        {clipboardHistory.length === 0 ? (
+          <EmptyState onPaste={handleAsyncPaste} hasAsyncClipboard={hasAsyncClipboard} />
+        ) : (
+          <div className="space-y-4">
+            {clipboardHistory.map((item, index) => (
+              <ClipboardItem key={item.timestamp} data={item.data} index={index} />
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 };
+
 export default ClipboardParser;
