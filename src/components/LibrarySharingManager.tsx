@@ -75,7 +75,7 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
           shared_with,
           can_edit,
           can_delete,
-          auth.users!shared_library_permissions_shared_with_fkey (
+          users:auth.users (
             email
           )
         `)
