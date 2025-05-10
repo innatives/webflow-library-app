@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +21,7 @@ interface SharedItemProps {
     created_at: string;
     created_by: string | null;
     screenshot_url?: string | null;
+    library_id?: string | null;
   };
   onDelete: (id: string) => Promise<void>;
 }
@@ -57,15 +57,22 @@ const SharedClipboardItem: React.FC<SharedItemProps> = ({
   }, [user, item]);
 
   const checkPermissions = async () => {
-    if (!user || !item.created_by) return;
+    if (!user || !item.created_by || !item.library_id) return;
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('shared_library_permissions').select('can_delete').eq('shared_by', item.created_by).eq('shared_with', user.id).single();
-      if (error) throw error;
+      const { data, error } = await supabase
+        .from('shared_library_permissions')
+        .select('can_delete')
+        .eq('shared_by', item.created_by)
+        .eq('shared_with', user.id)
+        .eq('library_id', item.library_id)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      
       if (data) {
         setCanDelete(data.can_delete);
+      } else {
+        setCanDelete(false);
       }
     } catch (error) {
       console.error('Error checking permissions:', error);

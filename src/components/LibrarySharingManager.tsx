@@ -149,9 +149,9 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
         .eq('shared_by', user.id)
         .eq('shared_with', userId)
         .eq('library_id', libraryId)
-        .single();
+        .maybeSingle();
 
-      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means no rows returned
+      if (checkError && checkError.code !== 'PGRST116') {
         throw checkError;
       }
 
