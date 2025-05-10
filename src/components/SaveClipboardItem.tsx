@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
-import { Share, Loader2, Image } from 'lucide-react';
+import { Share, Loader2, Image, Upload } from 'lucide-react';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -31,6 +31,7 @@ interface SaveClipboardItemProps {
 
 const SaveClipboardItem: React.FC<SaveClipboardItemProps> = ({ content, contentType, onSave }) => {
   const [isSaving, setIsSaving] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
   const [imageData, setImageData] = useState<string | null>(null);
   const [selectedLibrary, setSelectedLibrary] = useState<UserLibrary | null>(null);
   const { toast } = useToast();
@@ -44,6 +45,41 @@ const SaveClipboardItem: React.FC<SaveClipboardItemProps> = ({ content, contentT
       title: ''
     },
   });
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    setImageUploading(true);
+    
+    // Read the selected file as a data URL
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      setImageData(result);
+      setImageUploading(false);
+      
+      toast({
+        title: 'Image added',
+        description: 'Your custom image has been attached to the item',
+      });
+    };
+    
+    reader.onerror = () => {
+      setImageUploading(false);
+      toast({
+        title: 'Image upload failed',
+        description: 'Unable to read the selected image',
+        variant: 'destructive'
+      });
+    };
+    
+    reader.readAsDataURL(file);
+  };
+
+  const handleBrowseClick = () => {
+    fileInputRef.current?.click();
+  };
 
   const handleLibraryChange = (library: UserLibrary) => {
     setSelectedLibrary(library);
@@ -151,15 +187,53 @@ const SaveClipboardItem: React.FC<SaveClipboardItemProps> = ({ content, contentT
           </div>
         </div>
         
-        {imageData && (
-          <div className="bg-muted/50 rounded-md p-2 border min-h-[100px] flex items-center justify-center">
-            <img 
-              src={imageData} 
-              alt="Selected image" 
-              className="max-h-32 w-auto object-contain rounded-sm shadow-sm" 
+        <div className="border rounded-md p-4">
+          <div className="mb-3 flex justify-between items-center">
+            <p className="text-sm text-muted-foreground">Add a custom image to help identify this item</p>
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm"
+              onClick={handleBrowseClick}
+              disabled={imageUploading}
+              className="gap-1"
+            >
+              {imageUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4" />
+                  Browse Files
+                </>
+              )}
+            </Button>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept="image/*"
+              onChange={handleFileChange}
             />
           </div>
-        )}
+          
+          <div className="bg-muted/50 rounded-md p-2 border min-h-[100px] flex items-center justify-center">
+            {imageData ? (
+              <img 
+                src={imageData} 
+                alt="Selected image" 
+                className="max-h-32 w-auto object-contain rounded-sm shadow-sm" 
+              />
+            ) : (
+              <div className="flex flex-col items-center text-muted-foreground">
+                <Image className="h-8 w-8 mb-2" />
+                <span className="text-sm">Selected image will appear here</span>
+              </div>
+            )}
+          </div>
+        </div>
         
         <Button 
           type="submit" 
