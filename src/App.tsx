@@ -8,7 +8,7 @@ import NotFound from "./pages/NotFound";
 import Auth from "./components/Auth";
 import { AuthProvider } from "./context/AuthContext";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
-import { Library, FolderOpen, Plus, LogIn, LogOut, User, Clipboard } from "lucide-react";
+import { Library, FolderOpen, Plus, LogIn, LogOut, User, Clipboard, Settings } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -145,6 +145,18 @@ const SidebarContentComponent = () => {
               >
                 <Plus className="h-4 w-4" />
                 <span>New Library</span>
+              </button>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <button 
+                className="w-full flex items-center gap-2 text-muted-foreground"
+                onClick={() => setManagingLibraries(true)}
+              >
+                <Settings className="h-4 w-4" />
+                <span>Manage Libraries</span>
               </button>
             </SidebarMenuButton>
           </SidebarMenuItem>
