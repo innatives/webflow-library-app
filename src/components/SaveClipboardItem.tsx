@@ -1,18 +1,15 @@
-
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
-import { Save, Share, Loader2, Image, Camera, Upload } from 'lucide-react';
+import { Share, Loader2, Image } from 'lucide-react';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import LibrarySelector from './LibrarySelector';
 
 interface UserLibrary {
@@ -34,8 +31,6 @@ interface SaveClipboardItemProps {
 
 const SaveClipboardItem: React.FC<SaveClipboardItemProps> = ({ content, contentType, onSave }) => {
   const [isSaving, setIsSaving] = useState(false);
-  const [addScreenshot, setAddScreenshot] = useState(false);
-  const [imageUploading, setImageUploading] = useState(false);
   const [imageData, setImageData] = useState<string | null>(null);
   const [selectedLibrary, setSelectedLibrary] = useState<UserLibrary | null>(null);
   const { toast } = useToast();
@@ -50,72 +45,11 @@ const SaveClipboardItem: React.FC<SaveClipboardItemProps> = ({ content, contentT
     },
   });
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
-    setImageUploading(true);
-    
-    // Read the selected file as a data URL
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      setImageData(result);
-      setImageUploading(false);
-      
-      toast({
-        title: 'Image added',
-        description: 'Your custom image has been attached to the item',
-      });
-    };
-    
-    reader.onerror = () => {
-      setImageUploading(false);
-      toast({
-        title: 'Image upload failed',
-        description: 'Unable to read the selected image',
-        variant: 'destructive'
-      });
-    };
-    
-    reader.readAsDataURL(file);
-  };
-
-  const handleBrowseClick = () => {
-    fileInputRef.current?.click();
-  };
-
   const handleLibraryChange = (library: UserLibrary) => {
     setSelectedLibrary(library);
   };
 
-  const uploadScreenshot = async (): Promise<string | null> => {
-    if (!imageData) return null;
-    
-    try {
-      // Convert base64 to blob
-      const base64Response = await fetch(imageData);
-      const blob = await base64Response.blob();
-      
-      // Generate a unique filename
-      const filename = `screenshot_${Date.now()}.jpg`;
-      
-      // For now, we're directly returning the base64 data
-      // In a production app with Supabase Storage configured, we would upload to storage
-      return imageData;
-    } catch (error) {
-      console.error('Error uploading screenshot:', error);
-      toast({
-        title: 'Image upload failed',
-        description: 'Unable to upload the image',
-        variant: 'destructive'
-      });
-      return null;
-    }
-  };
-
   const saveToSupabase = async (values: z.infer<typeof formSchema>) => {
-    // Check if user is authenticated
     if (!user) {
       toast({
         title: 'Authentication required',
@@ -123,12 +57,10 @@ const SaveClipboardItem: React.FC<SaveClipboardItemProps> = ({ content, contentT
         variant: 'destructive'
       });
       
-      // Redirect to auth page
       navigate('/auth');
       return;
     }
     
-    // Check if a library is selected
     if (!selectedLibrary) {
       toast({
         title: 'No library selected',
@@ -141,12 +73,6 @@ const SaveClipboardItem: React.FC<SaveClipboardItemProps> = ({ content, contentT
     setIsSaving(true);
     
     try {
-      // Upload screenshot if available
-      let screenshotUrl = null;
-      if (addScreenshot && imageData) {
-        screenshotUrl = await uploadScreenshot();
-      }
-      
       const { data, error } = await supabase
         .from('shared_clipboard_items')
         .insert({
@@ -154,7 +80,7 @@ const SaveClipboardItem: React.FC<SaveClipboardItemProps> = ({ content, contentT
           content: content,
           content_type: contentType,
           created_by: user.id,
-          screenshot_url: screenshotUrl,
+          screenshot_url: imageData,
           library_id: selectedLibrary.id
         })
         .select();
@@ -168,15 +94,12 @@ const SaveClipboardItem: React.FC<SaveClipboardItemProps> = ({ content, contentT
       
       form.reset();
       setImageData(null);
-      setAddScreenshot(false);
       if (onSave) onSave();
     } catch (error: any) {
       let errorMessage = 'An error occurred while saving the item.';
       
-      // Handle specific error messages
       if (error.message?.includes('row-level security policy')) {
         errorMessage = 'Authentication required. Please sign in to save items.';
-        // Redirect to auth page for RLS errors
         setTimeout(() => navigate('/auth'), 1500);
       }
       
@@ -216,7 +139,7 @@ const SaveClipboardItem: React.FC<SaveClipboardItemProps> = ({ content, contentT
         
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label>Library</Label>
+            <FormLabel>Library</FormLabel>
             <LibrarySelector
               selectedLibraryId={selectedLibrary?.id || null}
               onLibraryChange={handleLibraryChange}
@@ -228,62 +151,13 @@ const SaveClipboardItem: React.FC<SaveClipboardItemProps> = ({ content, contentT
           </div>
         </div>
         
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="add-screenshot"
-            checked={addScreenshot}
-            onCheckedChange={setAddScreenshot}
-          />
-          <Label htmlFor="add-screenshot">Add a custom image</Label>
-        </div>
-        
-        {addScreenshot && (
-          <div className="border rounded-md p-4">
-            <div className="mb-3 flex justify-between items-center">
-              <p className="text-sm text-muted-foreground">Attach an image to help identify this item</p>
-              <Button 
-                type="button" 
-                variant="outline" 
-                size="sm"
-                onClick={handleBrowseClick}
-                disabled={imageUploading}
-                className="gap-1"
-              >
-                {imageUploading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4" />
-                    Browse Files
-                  </>
-                )}
-              </Button>
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
-                accept="image/*"
-                onChange={handleFileChange}
-              />
-            </div>
-            
-            <div className="bg-muted/50 rounded-md p-2 border min-h-[100px] flex items-center justify-center">
-              {imageData ? (
-                <img 
-                  src={imageData} 
-                  alt="Selected image" 
-                  className="max-h-32 w-auto object-contain rounded-sm shadow-sm" 
-                />
-              ) : (
-                <div className="flex flex-col items-center text-muted-foreground">
-                  <Image className="h-8 w-8 mb-2" />
-                  <span className="text-sm">Selected image will appear here</span>
-                </div>
-              )}
-            </div>
+        {imageData && (
+          <div className="bg-muted/50 rounded-md p-2 border min-h-[100px] flex items-center justify-center">
+            <img 
+              src={imageData} 
+              alt="Selected image" 
+              className="max-h-32 w-auto object-contain rounded-sm shadow-sm" 
+            />
           </div>
         )}
         
@@ -291,7 +165,7 @@ const SaveClipboardItem: React.FC<SaveClipboardItemProps> = ({ content, contentT
           type="submit" 
           disabled={isSaving || !selectedLibrary} 
           className="w-full gap-2"
-          variant="outline"
+          variant="default"
         >
           {isSaving ? (
             <>
