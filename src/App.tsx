@@ -14,12 +14,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "./components/ui/button";
 import LibraryManager from "./components/LibraryManager";
+import SharedClipboardList from "./components/SharedClipboardList";
 
 const queryClient = new QueryClient();
 
+interface Library {
+  id: string;
+  name: string;
+  created_at: string;
+  created_by: string;
+  is_shared: boolean;
+}
+
 const SidebarContentComponent = () => {
-  const [libraries, setLibraries] = useState([]);
+  const [libraries, setLibraries] = useState<Library[]>([]);
   const [managingLibraries, setManagingLibraries] = useState(false);
+  const [selectedLibrary, setSelectedLibrary] = useState<string | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -41,6 +51,11 @@ const SidebarContentComponent = () => {
 
       if (error) throw error;
       setLibraries(data || []);
+      
+      // Select first library by default if none is selected
+      if (data && data.length > 0 && !selectedLibrary) {
+        setSelectedLibrary(data[0].id);
+      }
     } catch (error) {
       console.error('Error fetching libraries:', error);
     }
@@ -70,9 +85,13 @@ const SidebarContentComponent = () => {
           </SidebarMenuButton>
         </SidebarMenuItem>
         
-        {libraries.map((library: any) => (
+        {libraries.map((library) => (
           <SidebarMenuItem key={library.id}>
-            <SidebarMenuButton asChild>
+            <SidebarMenuButton 
+              asChild 
+              isActive={selectedLibrary === library.id}
+              onClick={() => setSelectedLibrary(library.id)}
+            >
               <button className="w-full flex items-center gap-2 pl-6 text-muted-foreground">
                 <FolderOpen className="h-4 w-4" />
                 <span>{library.name}</span>
@@ -98,13 +117,18 @@ const SidebarContentComponent = () => {
         <LibraryManager
           open={managingLibraries}
           onClose={() => setManagingLibraries(false)}
-          onSelect={() => {
+          onSelect={(library) => {
             setManagingLibraries(false);
+            setSelectedLibrary(library.id);
             fetchLibraries();
           }}
-          selectedLibraryId={null}
+          selectedLibraryId={selectedLibrary}
         />
       )}
+
+      <div className="flex-1 p-4">
+        {selectedLibrary && <SharedClipboardList selectedLibraryId={selectedLibrary} />}
+      </div>
     </>
   );
 };
