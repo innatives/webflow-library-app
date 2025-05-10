@@ -149,9 +149,9 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
         .eq('shared_by', user.id)
         .eq('shared_with', userId)
         .eq('library_id', libraryId)
-        .single();
+        .maybeSingle();
 
-      if (checkError && checkError.code !== 'PGRST116') {
+      if (checkError) {
         throw checkError;
       }
 
@@ -167,24 +167,18 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
       // Create permission record
       const { error: insertError } = await supabase
         .from('shared_library_permissions')
-        .insert({
+        .upsert({
           shared_by: user.id,
           shared_with: userId,
           can_edit: false,
           can_delete: false,
           library_id: libraryId
+        }, {
+          onConflict: 'shared_by,shared_with',
+          ignoreDuplicates: true
         });
       
       if (insertError) {
-        // If we still get a unique constraint violation, handle it gracefully
-        if (insertError.code === '23505') {
-          toast({
-            title: "Already shared",
-            description: `You've already shared "${libraryName}" with this user`,
-          });
-          setEmail('');
-          return;
-        }
         throw insertError;
       }
 
@@ -197,11 +191,20 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
       // Refresh the shared users list
       fetchSharedUsers();
     } catch (error: any) {
-      toast({
-        title: "Error sharing library",
-        description: error.message || "An error occurred while sharing the library",
-        variant: "destructive"
-      });
+      // Handle specific error cases
+      if (error.code === '23505') {
+        toast({
+          title: "Already shared",
+          description: `You've already shared "${libraryName}" with this user`,
+        });
+        setEmail('');
+      } else {
+        toast({
+          title: "Error sharing library",
+          description: error.message || "An error occurred while sharing the library",
+          variant: "destructive"
+        });
+      }
     } finally {
       setLoading(false);
     }
