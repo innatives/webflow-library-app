@@ -141,9 +141,30 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
         });
         return;
       }
+
+      // Check if permission already exists for this library
+      const { data: existingPermission, error: checkError } = await supabase
+        .from('shared_library_permissions')
+        .select('id')
+        .eq('shared_by', user.id)
+        .eq('shared_with', userId)
+        .eq('library_id', libraryId)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means no rows returned
+        throw checkError;
+      }
+
+      if (existingPermission) {
+        toast({
+          title: "Already shared",
+          description: `You've already shared "${libraryName}" with this user`,
+        });
+        return;
+      }
       
       // Create permission record
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('shared_library_permissions')
         .insert({
           shared_by: user.id,
@@ -151,29 +172,18 @@ const LibrarySharingManager: React.FC<LibrarySharingManagerProps> = ({
           can_edit: false,
           can_delete: false,
           library_id: libraryId
-        })
-        .select()
-        .single();
-      
-      if (error) {
-        if (error.code === '23505') {
-          toast({
-            title: "Already shared",
-            description: `You've already shared "${libraryName}" with this user`,
-          });
-        } else {
-          throw error;
-        }
-      } else {
-        toast({
-          title: "Library shared",
-          description: `"${libraryName}" has been shared with ${email}`,
         });
-        setEmail('');
-        
-        // Refresh the shared users list
-        fetchSharedUsers();
-      }
+      
+      if (error) throw error;
+
+      toast({
+        title: "Library shared",
+        description: `"${libraryName}" has been shared with ${email}`,
+      });
+      setEmail('');
+      
+      // Refresh the shared users list
+      fetchSharedUsers();
     } catch (error: any) {
       toast({
         title: "Error sharing library",
