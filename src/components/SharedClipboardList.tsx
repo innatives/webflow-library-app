@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, LogIn, Share, ClipboardCopy } from 'lucide-react';
+import { Loader2, LogIn, Share, Plus } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import SharedClipboardItem from './SharedClipboardItem';
@@ -157,12 +157,12 @@ const SharedClipboardList: React.FC<SharedClipboardListProps> = ({ selectedLibra
       
       {/* Floating Button */}
       <Button
-        className="fixed bottom-6 right-6 rounded-full shadow-lg"
-        size="lg"
+        size="icon"
+        className="fixed bottom-6 right-6 h-12 w-12 rounded-full shadow-lg"
         onClick={() => setClipboardOpen(true)}
       >
-        <ClipboardCopy className="h-4 w-4 mr-2" />
-             </Button>
+        <Plus className="h-6 w-6" />
+      </Button>
 
       {/* Clipboard Parser Modal */}
       <Dialog open={clipboardOpen} onOpenChange={setClipboardOpen}>
