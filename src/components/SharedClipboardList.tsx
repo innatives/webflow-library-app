@@ -54,8 +54,8 @@ const SharedClipboardList: React.FC<SharedClipboardListProps> = ({ selectedLibra
       // First check if the user has access to this library
       const { data: hasAccess, error: accessError } = await supabase
         .rpc('has_library_access', {
-          current_user_id: user?.id,
-          library_id: libraryId
+          library_id: libraryId,
+          current_user_id: user?.id
         });
 
       if (accessError) throw accessError;
@@ -70,11 +70,11 @@ const SharedClipboardList: React.FC<SharedClipboardListProps> = ({ selectedLibra
         return;
       }
 
-      // Fetch items from the library using table alias to avoid ambiguity
+      // Fetch items from the library with explicit table reference
       const { data: items, error: itemsError } = await supabase
         .from('shared_clipboard_items')
         .select('*')
-        .eq('library_id', libraryId)
+        .eq('shared_clipboard_items.library_id', libraryId)
         .order('created_at', { ascending: false });
         
       if (itemsError) throw itemsError;
